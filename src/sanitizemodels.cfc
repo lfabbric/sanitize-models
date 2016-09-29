@@ -3,7 +3,7 @@ component output="false" mixin="controller,model" {
     public function init() {
         this.version = "1.3.3,1.3.4";
         return this;
-	}
+    }
 
     function excludeFields(required array fieldlist) {
         var metadata = GetMetaData(this);
