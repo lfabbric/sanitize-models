@@ -69,6 +69,7 @@ component output="false" mixin="controller,model" {
         if (structKeyExists(arguments, "sanitize") && arguments.sanitize || !structKeyExists(arguments, "sanitize") && isSanitizedRequired) {
             arguments.data = this.$objectSanitizer(arguments.data);
         }
+        arguments.delete("sanitize");
         return core.renderWith(argumentCollection=arguments);
     }
 
