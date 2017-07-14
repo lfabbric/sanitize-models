@@ -23,9 +23,9 @@ component output="false" mixin="controller,model" {
 
 
     /**
-    * @hint loop through and remove fields from moels.
+    * @hint loop through and remove fields from models.
     */
-    private function $objectSanitizer(object, depth=1) {
+    public function $objectSanitizer(object, depth=1) {
         if (depth >= 7) {
             return arguments.object;
         }
