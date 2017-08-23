@@ -1,76 +1,68 @@
 component output="false" mixin="controller,model" {
 
     public function init() {
-        this.version = "1.3.3,1.3.4";
+        this.version = "1.3.4,1.4,1.4.1,1.4.2,1.4.3,1.4.4,1.4.5";
         return this;
     }
 
-    /**
-    * @hint provides a method for Models to exclude fields
-        usage:
-            excludeFields(['hashedpassword','lastipaddress']);
-    */
     function excludeFields(required array fieldlist) {
         var metadata = GetMetaData(this);
-        lock name="metadata.excludeFields" timeout="10"{
-            metadata.excludeFields = fieldlist;
+        var componentMetaData = GetComponentMetaData(metadata.name);
+        lock name="componentMetaData.excludedFields" timeout="10"{
+            GetComponentMetaData(metadata.name).excludedFields = fieldlist;
         }
     }
 
-    function getExcludedFields() {
-        return GetMetaData(this)["EXCLUDEFIELDS"];
+    public array function getExcludedFields() {
+        var excludedFields = [];
+        var metadata = GetMetaData(this);
+        var componentMetaData = GetComponentMetaData(metadata.name);
+        if (componentMetaData.keyExists("excludedFields")) {
+            excludedFields = componentMetaData.excludedFields;
+        }
+        return excludedFields;
     }
 
-
-    /**
-    * @hint loop through and remove fields from models.
-    */
-    public function $objectSanitizer(object, depth=1) {
+    public function $objectSanitizer(required object modelObject, depth=1) {
+        var excludedFields = [];
         if (depth >= 7) {
-            return arguments.object;
+            return arguments.modelObject;
         }
-        var excludeFields = [];
-        if (structKeyExists(getMetaData(arguments.object), "excludefields")) {
-            excludeFields = getMetaData(arguments.object).excludefields;
+        if (isObject(arguments.modelObject)) {
+            excludedFields = modelObject.getExcludedFields();
         }
-
-        if (isArray(arguments.object) && arrayLen(arguments.object)) {
-            depth++;
-            for (var i=1; i<=arrayLen(arguments.object);i++) {
-                arguments.object[i] = this.$objectSanitizer(arguments.object[i], depth);
+        if (isArray(arguments.modelObject) && arguments.modelObject.len() > 0) {
+            for (var item in arguments.modelObject) {
+                item = $objectSanitizer(item, depth++);
             }
         } else {
-            var keyList = structKeyArray(arguments.object);
-            for (var j=1; j<=arrayLen(keyList); j++) {
-                var element = keyList[j];
-                if (arrayFindNoCase(excludeFields, element)) {
-                    structDelete(arguments.object, element);
-                } else if (structKeyExists(getMetaData(arguments.object[element]),'type')) {
-                    arguments.object[element] = this.$objectSanitizer(arguments.object[element], depth++);
-                } else if (getMetaData(arguments.object[element]).name == "coldfusion.runtime.Array" && arrayLen(arguments.object[element]) && structKeyExists(getMetaData(arguments.object[element][1]),'type')) {
-                    for (var k=1; k<=arrayLen(arguments.object[element]);k++) {
-                        arguments.object[element][k] = this.$objectSanitizer(arguments.object[element][k], depth);
+            var keyList = structKeyArray(arguments.modelObject);
+            for (key in keyList) {
+                if (excludedFields.findNoCase(key)) {
+                    structDelete(arguments.modelObject, key);
+                } else if (structKeyExists(getMetaData(arguments.modelObject[key]),'type')) {
+                    arguments.modelObject[key] = $objectSanitizer(arguments.modelObject[key], depth++);
+                } else if (getMetaData(arguments.modelObject[key]).name == "coldfusion.runtime.Array" && arrayLen(arguments.modelObject[key]) && getMetaData(arguments.modelObject[key][1]).keyExists('type')) {
+                    for (item in arguments.modelObject[key]) {
+                        item = $objectSanitizer(item, depth++);
                     }
                 }
             }
         }
-        return arguments.object;
+        return arguments.modelObject;
     }
 
-    /**
-    * @hint override renderWith, and if configured or specifically requested, remove fields from Models
-    */
-    public function renderWith(required any data, string controller, string action, string template, any layout, any cache, string returnAs, boolean hideDebugInformation, boolean sanitize) {
-        isSanitizedRequired = False;
-        try {
-            isSanitizedRequired = get(functionName="renderWith", name="sanitize");
-        } catch(any e) {}
-
-        if (structKeyExists(arguments, "sanitize") && arguments.sanitize || !structKeyExists(arguments, "sanitize") && isSanitizedRequired) {
-            arguments.data = this.$objectSanitizer(arguments.data);
+    public function renderWith(boolean sanitize) {
+        if (!isQuery(arguments.data)) {
+            var isSanitizedRequired = False;
+            try {
+                isSanitizedRequired = get(functionName="renderWith", name="sanitize");
+            } catch(any e) {}
+            if ((arguments.keyExists("sanitize") && arguments.sanitize) || (!arguments.keyExists("sanitize") && isSanitizedRequired)) {
+                arguments.data = $objectSanitizer(arguments.data);
+            }
         }
         arguments.delete("sanitize");
         return core.renderWith(argumentCollection=arguments);
     }
-
 }
