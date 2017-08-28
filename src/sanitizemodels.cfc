@@ -52,7 +52,7 @@ component output="false" mixin="controller,model" {
         return arguments.modelObject;
     }
 
-    public function renderWith(boolean sanitize) {
+    public function renderWith(required any data, boolean sanitize) {
         if (!isQuery(arguments.data)) {
             var isSanitizedRequired = False;
             try {
