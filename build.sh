@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set version
-VERSION=0.2.2
+VERSION=0.2.3
 
 # set file name
 ZIPFILE=SanitizeModels-$VERSION.zip

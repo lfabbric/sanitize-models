@@ -23,9 +23,9 @@ component output="false" mixin="controller,model" {
         return excludedFields;
     }
 
-    public function $objectSanitizer(required object modelObject, depth=1) {
+    public function $objectSanitizer(required struct modelObject, numeric depth = 1) {
         var excludedFields = [];
-        if (depth >= 7) {
+        if (arguments.depth >= 7) {
             return arguments.modelObject;
         }
         if (isObject(arguments.modelObject)) {
@@ -33,7 +33,7 @@ component output="false" mixin="controller,model" {
         }
         if (isArray(arguments.modelObject) && arguments.modelObject.len() > 0) {
             for (var item in arguments.modelObject) {
-                item = $objectSanitizer(item, depth++);
+                item = $objectSanitizer(item, arguments.depth++);
             }
         } else {
             var keyList = structKeyArray(arguments.modelObject);
@@ -41,10 +41,10 @@ component output="false" mixin="controller,model" {
                 if (excludedFields.findNoCase(key)) {
                     structDelete(arguments.modelObject, key);
                 } else if (structKeyExists(getMetaData(arguments.modelObject[key]),'type')) {
-                    arguments.modelObject[key] = $objectSanitizer(arguments.modelObject[key], depth++);
+                    arguments.modelObject[key] = $objectSanitizer(arguments.modelObject[key], arguments.depth++);
                 } else if (getMetaData(arguments.modelObject[key]).name == "coldfusion.runtime.Array" && arrayLen(arguments.modelObject[key]) && getMetaData(arguments.modelObject[key][1]).keyExists('type')) {
                     for (item in arguments.modelObject[key]) {
-                        item = $objectSanitizer(item, depth++);
+                        item = $objectSanitizer(item, arguments.depth++);
                     }
                 }
             }
